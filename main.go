@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -43,14 +42,12 @@ func _main() int {
 		fmt.Fprintln(os.Stderr, "readConfig:", err)
 		return 1
 	}
-	log.Println("config:", c)
 	sum, err := getCurrentSum(c)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		onError(c, err.Error())
 		return 1
 	}
-	log.Println("sum:", sum)
 	prevSum, err := readPrevSum(c)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
