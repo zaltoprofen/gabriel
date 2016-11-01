@@ -1,0 +1,7 @@
+{
+  "SumFilePath": "/path/to/chacksum",
+  "Token": "IFTTT-Maker-Token",
+  "EventName": "maker-event",
+  "Url": "",
+  "Selector": "div#example"
+}
