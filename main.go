@@ -5,8 +5,10 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -28,41 +30,63 @@ type IFTTTPostForm struct {
 	Value3 string `json:"value3"`
 }
 
+var (
+	client  = &http.Client{}
+	verbose = flag.Bool("verbose", false, "show log message")
+)
+
+func printLog(msg ...interface{}) {
+	if *verbose {
+		log.Println(msg...)
+	}
+}
+
 func main() {
-	os.Exit(_main())
+	flag.Parse()
+	exitCode := _main()
+	printLog("exit gabriel:", exitCode)
+	os.Exit(exitCode)
 }
 
 func _main() int {
-	if len(os.Args) != 2 {
+	if len(flag.Args()) != 1 {
 		fmt.Fprintf(os.Stderr, "usage: %s config.json\n", os.Args[0])
 		return 1
 	}
-	c, err := readConfig(os.Args[1])
+	printLog("start gabriel")
+	c, err := readConfig(flag.Arg(0))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "readConfig:", err)
 		return 1
 	}
+	printLog("read configuration:", flag.Arg(0))
 	sum, err := getCurrentSum(c)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		onError(c, err.Error())
+		printLog("notified onError event:", err)
 		return 1
 	}
+	printLog("got current target sum:", hex.EncodeToString(sum))
 	prevSum, err := readPrevSum(c)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		onError(c, err.Error())
+		printLog("notified onError event:", err)
 		return 1
 	}
+	printLog("loaded previous target sum:", hex.EncodeToString(sum))
 	if !bytes.Equal(sum, prevSum) {
 		if err := onChange(c); err != nil {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			return 1
 		}
+		printLog("notified onChange event")
 	}
 	if err := writeBackSum(c, sum); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		onError(c, err.Error())
+		printLog("notified onError event:", err)
 		return 1
 	}
 	return 0
@@ -108,8 +132,8 @@ func fireIFTTT(c *Config, form *IFTTTPostForm) error {
 		return err
 	}
 	body := strings.NewReader(string(data))
-	reqUrl := fmt.Sprintf("http://maker.ifttt.com/trigger/%s/with/key/%s", c.EventName, c.Token)
-	r, err := http.Post(reqUrl, "application/json", body)
+	reqURL := fmt.Sprintf("http://maker.ifttt.com/trigger/%s/with/key/%s", c.EventName, c.Token)
+	r, err := client.Post(reqURL, "application/json", body)
 	if err != nil {
 		return err
 	}
