@@ -22,6 +22,7 @@ type Config struct {
 	EventName   string
 	Url         string
 	Selector    string
+	UserAgent   string
 }
 
 type IFTTTPostForm struct {
@@ -160,16 +161,30 @@ func writeBackSum(c *Config, sum []byte) error {
 }
 
 func getCurrentSum(c *Config) ([]byte, error) {
-	s, err := scrape(c.Url, c.Selector)
+	s, err := scrape(c.Url, c.Selector, c.UserAgent)
 	if err != nil {
 		return nil, err
 	}
+	printLog("scrape:", s)
 	sum := sha1.Sum([]byte(s))
 	return sum[:], nil
 }
 
-func scrape(url, selector string) (string, error) {
-	doc, err := goquery.NewDocument(url)
+func scrape(url, selector, userAgent string) (string, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	if userAgent != "" {
+		req.Header.Set("User-Agent", userAgent)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return "", err
 	}

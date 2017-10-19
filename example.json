@@ -3,5 +3,6 @@
   "Token": "IFTTT-Maker-Token",
   "EventName": "maker-event",
   "Url": "",
-  "Selector": "div#example"
+  "Selector": "div#example",
+  "UserAgent": "Go-http-client/1.1"
 }
